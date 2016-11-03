@@ -1,17 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-"""
-ZetCode PyQt4 tutorial
-
-In the example, we draw randomly 1000 red points
-on the window.
-
-author: Jan Bodnar
-website: zetcode.com
-last edited: September 2011
-"""
-
 import sys, random
 from PyQt4 import QtGui, QtCore
 from operator import itemgetter
@@ -20,6 +9,9 @@ from operator import itemgetter
 class Example(QtGui.QWidget):
     pointList = []
     lineList = []
+    wHeight = 800
+    wWidth = 1000
+
     def __init__(self):
         super(Example, self).__init__()
         self.readInputFile()
@@ -27,6 +19,9 @@ class Example(QtGui.QWidget):
 
         self.convexButton = QtGui.QPushButton('Compute', self)
         self.convexButton.clicked.connect(self.convexHandler)
+
+        self.randomButton = QtGui.QPushButton('Random', self)
+        self.randomButton.clicked.connect(self.randomHandler)
 
         self.readButton = QtGui.QPushButton('Load', self)
         self.readButton.clicked.connect(self.readHandler)
@@ -36,6 +31,7 @@ class Example(QtGui.QWidget):
 
         layout = QtGui.QHBoxLayout()
         layout.addWidget(self.convexButton)
+        layout.addWidget(self.randomButton)
         layout.addWidget(self.readButton)
         layout.addWidget(self.resetButton)
 
@@ -44,11 +40,11 @@ class Example(QtGui.QWidget):
         vbox.addLayout(layout)
         self.setLayout(vbox)
 
-
         self.initUI()
 
-    def leftTurn(self, first, second, third):
-        if (first[1] > second[1] and second[1] < third[1]):
+    def leftTurn(self, f, s, t):
+        res = (s[0] - f[0]) * (t[1] - f[1]) - (s[1] - f[1]) * (t[0] - f[0])
+        if res > 0:
             return True
         return False
 
@@ -56,13 +52,6 @@ class Example(QtGui.QWidget):
         upper = []
         lower = []
         self.pointList.sort(key=itemgetter(0,1))
-        # upper.append(self.pointList[0])
-        # upper.append(self.pointList[1])
-        # for (i in range(2, self.pointList.len())):
-        #     upper.append(self.pointList[i])
-        #     while (upper.len() > 2 and self.leftTurn(upper[-2], upper[-1])):
-        #         del upper[-2]
-
 
         for tup in self.pointList:
             upper.append(tup)
@@ -80,8 +69,10 @@ class Example(QtGui.QWidget):
         self.lineList = upper + lower
 
 
-        print self.lineList
-
+    def randomHandler(self):
+        self.resetHandler()
+        random.seed()
+        self.pointList = [ ( random.randint(5, self.wWidth - 5), random.randint(5, self.wHeight - 50) ) for k in range(1000) ]
 
     def resetHandler(self):
         self.pointList = []
@@ -93,6 +84,8 @@ class Example(QtGui.QWidget):
         QtGui.QWidget.update(self)
 
     def readInputFile(self):
+        self.pointList = []
+        self.lineList = []
         f = open('points', 'r')
         for line in f:
             cords = line.split()
@@ -100,7 +93,7 @@ class Example(QtGui.QWidget):
 
     def initUI(self):
 
-        self.setGeometry(100, 100, 1000, 800)
+        self.setGeometry(100, 100, self.wWidth, self.wHeight)
         self.setWindowTitle('Convex hull')
         self.show()
 
@@ -129,6 +122,8 @@ class Example(QtGui.QWidget):
             if (self.lineList.index(tup) + 1 != len(self.lineList)):
                 nextTup = self.lineList[self.lineList.index(tup) + 1]
                 qp.drawLine(tup[0], tup[1], nextTup[0], nextTup[1])
+        if len(self.lineList) > 1:
+            qp.drawLine(self.lineList[0][0], self.lineList[0][1], self.lineList[-1][0], self.lineList[-1][1])
         QtGui.QWidget.update(self)
 
     def mousePressEvent(self, event):
