@@ -53,15 +53,21 @@ class Example(QtGui.QWidget):
         lower = []
         self.pointList.sort(key=itemgetter(0,1))
 
+        lastTup = None
         for tup in self.pointList:
-            upper.append(tup)
-            while (len(upper) > 2 and self.leftTurn(upper[-3], upper[-2], upper[-1])):
-                del upper[-2]
+            if tup != lastTup:
+                upper.append(tup)
+                while (len(upper) > 2 and self.leftTurn(upper[-3], upper[-2], upper[-1])):
+                    del upper[-2]
+            lastTup = tup
 
+        lastTup = None
         for tup in reversed(self.pointList):
-            lower.append(tup)
-            while (len(lower) > 2 and self.leftTurn(lower[-3], lower[-2], lower[-1])):
-                del lower[-2]
+            if tup != lastTup:
+                lower.append(tup)
+                while (len(lower) > 2 and self.leftTurn(lower[-3], lower[-2], lower[-1])):
+                    del lower[-2]
+            lastTup = tup
 
         del lower[0]
         del lower[-1]
