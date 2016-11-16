@@ -9,8 +9,16 @@ from operator import itemgetter
 class Example(QtGui.QWidget):
     pointList = []
     lineList = []
+    ratio_x = 1
+    ratio_y = 1
+    smallest_x = float('inf')
+    smallest_y = float('inf')
     wHeight = 800
     wWidth = 1000
+    offset_x = 10
+    offset_y = 50
+    biggest_x = -float('inf')
+    biggest_y = -float('inf')
 
     def __init__(self):
         super(Example, self).__init__()
@@ -41,6 +49,12 @@ class Example(QtGui.QWidget):
         self.setLayout(vbox)
 
         self.initUI()
+
+    def resetValues(self):
+        self.smallest_y = float('inf')
+        self.smallest_x = float('inf')
+        self.biggest_x = -float('inf')
+        self.biggest_y = -float('inf')
 
     def leftTurn(self, f, s, t):
         res = (s[0] - f[0]) * (t[1] - f[1]) - (s[1] - f[1]) * (t[0] - f[0])
@@ -89,21 +103,55 @@ class Example(QtGui.QWidget):
         self.readInputFile()
         QtGui.QWidget.update(self)
 
+    def setMaxMin(self):
+        for (x, y) in self.pointList:
+            if x < self.smallest_x:
+                self.smallest_x = x
+
+            if x > self.biggest_x:
+                self.biggest_x = x
+
+            if y < self.smallest_y:
+                self.smallest_y = y
+
+            if y > self.biggest_y:
+                self.biggest_y = y
+
+        self.calcRatios()
+
+
+    def calcRatios(self):
+        if (self.biggest_x - self.smallest_x) == 0:
+            self.ratio_x = 1
+        else:
+            self.ratio_x = float(self.wWidth - self.offset_x) / (float(self.biggest_x) - float(self.smallest_x))
+
+        if (self.biggest_y - self.smallest_y) == 0:
+            self.ratio_y = 1
+        else:
+            self.ratio_y = float(self.wHeight - self.offset_y) / (float(self.biggest_y) - float(self.smallest_y))
+
     def readInputFile(self):
         self.pointList = []
         self.lineList = []
         f = open('points', 'r')
         for line in f:
             cords = line.split()
-            self.pointList.append((int(cords[0]), int(cords[1])))
+            cords[0] = float(cords[0])
+            cords[1] = float(cords[1])
+            self.pointList.append((float(cords[0]), float(cords[1])))
+
+
 
     def initUI(self):
 
-        self.setGeometry(100, 100, self.wWidth, self.wHeight)
+        self.setGeometry(100, 100, self.wWidth + self.offset_x + 5, self.wHeight + self.offset_y + 5)
         self.setWindowTitle('Convex hull')
         self.show()
 
     def paintEvent(self, e):
+        self.resetValues()
+        self.setMaxMin()
         qp = QtGui.QPainter()
         qp.begin(self)
         self.drawPoints(qp)
@@ -115,26 +163,39 @@ class Example(QtGui.QWidget):
         qp.setBrush(QtCore.Qt.red)
         size = self.size()
         radius = 3
+
         for pointTuple in self.pointList:
             x = pointTuple[0]
             y = pointTuple[1]
-            center = QtCore.QPoint(x, y)
+            center = QtCore.QPoint((x - self.smallest_x) * self.ratio_x + self.offset_x, (y - self.smallest_y) * self.ratio_y + self.offset_y)
             qp.drawEllipse(center, radius, radius)
 
     def drawLines(self, qp):
         pen = QtGui.QPen(QtCore.Qt.black, 2, QtCore.Qt.SolidLine)
         qp.setPen(pen)
+        s_x = self.smallest_x
+        s_y = self.smallest_y
         for tup in self.lineList:
             if (self.lineList.index(tup) + 1 != len(self.lineList)):
                 nextTup = self.lineList[self.lineList.index(tup) + 1]
-                qp.drawLine(tup[0], tup[1], nextTup[0], nextTup[1])
+                x_1 = (tup[0] - s_x) * self.ratio_x + self.offset_x
+                y_1 = (tup[1] - s_y) * self.ratio_y + self.offset_y
+                x_2 = (nextTup[0] - s_x) * self.ratio_x + self.offset_x
+                y_2 = (nextTup[1] - s_y) * self.ratio_y + self.offset_y
+                qp.drawLine(x_1, y_1, x_2, y_2)
         if len(self.lineList) > 1:
-            qp.drawLine(self.lineList[0][0], self.lineList[0][1], self.lineList[-1][0], self.lineList[-1][1])
+            x_1 = (self.lineList[0][0] - s_x) * self.ratio_x + self.offset_x
+            y_1 = (self.lineList[0][1] - s_y) * self.ratio_y + self.offset_y
+            x_2 = (self.lineList[-1][0] - s_x) * self.ratio_x + self.offset_x
+            y_2 = (self.lineList[-1][1] - s_y) * self.ratio_y + self.offset_y
+            qp.drawLine(x_1, y_1, x_2, y_2)
         QtGui.QWidget.update(self)
 
-    def mousePressEvent(self, event):
-        self.pointList.append((event.pos().x(), event.pos().y()))
-        QtGui.QWidget.update(self)
+    # def mousePressEvent(self, event):
+    #     s_x = abs(self.smallest_x)
+    #     s_y = abs(self.smallest_y)
+    #     self.pointList.append(((event.pos().x() - s_x) * self.ratio_x + self.offset_x , (event.pos().y() - s_y) * self.ratio_y + self.offset_y ))
+    #     QtGui.QWidget.update(self)
 
     # def mouseReleaseEvent(self, QMouseEvent):
     #     cursor =QtGui.QCursor()
