@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys, random, math
+import sys, random, math, time
 from PyQt4 import QtGui, QtCore
 from operator import itemgetter
 
@@ -142,6 +142,7 @@ class Example(QtGui.QWidget):
         return (c_x, c_y)
 
     def bruteHandler(self):
+        start_time = time.time()
         self.c_mid = None
         self.c_radius = None
         c_min = self.wHeight + self.wWidth
@@ -163,7 +164,7 @@ class Example(QtGui.QWidget):
                         valid = False
                         break
 
-                if c < c_min and valid == True:
+                if c < c_min and valid:
                     c_min = c
                     c_mid = self.newCircleMidPoint(a, b)
                     c_radius = c
@@ -191,7 +192,7 @@ class Example(QtGui.QWidget):
                             valid = False
                             break
 
-                    if C < c_min and valid == True:
+                    if C < c_min and valid:
                         c_min = C
                         c_mid = (cent_x, cent_y)
                         c_radius = C
@@ -200,11 +201,14 @@ class Example(QtGui.QWidget):
 
         self.c_mid = c_mid
         self.c_radius = c_radius
+        QtGui.QWidget.update(self)
+        stop_time = time.time()
+        print "It took: " + str(stop_time - start_time) + 'seconds with ' + str(len(self.pointList)) + 'points'
 
     def randomHandler(self):
         self.resetHandler()
         random.seed()
-        self.pointList = [ ( random.randint(5, self.wWidth - 5), random.randint(5, self.wHeight - 50) ) for k in range(1000) ]
+        self.pointList = [ ( random.randint(5, self.wWidth - 5), random.randint(5, self.wHeight - 50) ) for k in range(56) ]
 
     def resetHandler(self):
         self.pointList = []
@@ -264,6 +268,7 @@ class Example(QtGui.QWidget):
     def drawCircle(self, qp):
         if self.c_mid and self.c_radius:
             qp.setPen(QtCore.Qt.red)
+            qp.setBrush(QtCore.Qt.NoBrush)
             size = self.size()
             x = self.c_mid[0]
             y = self.c_mid[1]
