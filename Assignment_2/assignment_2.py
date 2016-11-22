@@ -22,6 +22,9 @@ class Example(QtGui.QWidget):
         self.bruteButton = QtGui.QPushButton('Brute force', self)
         self.bruteButton.clicked.connect(self.bruteHandler)
 
+        self.miniDiscButton = QtGui.QPushButton('MiniDisc', self)
+        self.miniDiscButton.clicked.connect(self.miniDiscHandler)
+
         self.randomButton = QtGui.QPushButton('Random', self)
         self.randomButton.clicked.connect(self.randomHandler)
 
@@ -33,6 +36,7 @@ class Example(QtGui.QWidget):
 
         layout = QtGui.QHBoxLayout()
         layout.addWidget(self.bruteButton)
+        layout.addWidget(self.miniDiscButton)
         layout.addWidget(self.randomButton)
         layout.addWidget(self.readButton)
         layout.addWidget(self.resetButton)
@@ -205,10 +209,69 @@ class Example(QtGui.QWidget):
         stop_time = time.time()
         print "It took: " + str(stop_time - start_time) + 'seconds with ' + str(len(self.pointList)) + 'points'
 
+    def minimalDiscTwoPoints(self, a, b):
+        c_x = (a[0] + b[0]) / 2
+        c_y = (a[1] + b[1]) / 2
+        r = math.sqrt( (a[0] - b[0])**2 + (a[1] - b[1])**2 ) / 2
+        return (c_x, c_y, r)
+
+    def outside(self, c_x, c_y, r, p):
+        dist = math.sqrt( (c_x - p[0])**2 + (c_y - p[1])**2 )
+        if dist > r:
+            return True
+        return False
+
+    def miniDiscHandler(self):
+        start_time = time.time()
+        random.shuffle(self.pointList)
+
+        (c_x, c_y, r) = self.minimalDiscTwoPoints(self.pointList[0], self.pointList[1])
+
+        for i in xrange(2, len(self.pointList)):
+            p = self.pointList[i]
+
+            if self.outside(c_x, c_y, r, p):
+                (c_x, c_y, r) = self.miniDiscWithPoint(self.pointList[0:i], p)
+
+        self.c_mid = (c_x, c_y)
+        self.c_radius = r
+        stop_time = time.time()
+        print "It took: " + str(stop_time - start_time) + 'seconds with ' + str(len(self.pointList)) + 'points'
+        QtGui.QWidget.update(self)
+
+
+
+    def miniDiscWithPoint(self, lst, q):
+        # Need random shuffle lst here? must make copy of list in caller in that case?
+        p1 = lst[0]
+        (c_x, c_y, r) = self.minimalDiscTwoPoints(p1, q)
+
+        for i in xrange(1, len(lst)):
+            p = lst[i]
+
+            if self.outside(c_x, c_y, r, p):
+                (c_x, c_y, r) = self.miniDiscWith2Points(self.pointList[0:i], p, q)
+
+        return (c_x, c_y, r)
+
+    def miniDiscWith2Points(self, lst, q1, q2):
+        (c_x, c_y, r) = self.minimalDiscTwoPoints(q1, q2)
+
+        for i in xrange(0, len(lst)):
+            p = lst[i]
+
+            if self.outside(c_x, c_y, r, p):
+                (c_x, c_y, r) = self.smallesCircleThreePoints(q1, q2, p)
+
+        return (c_x, c_y, r)
+
+
+
+
     def randomHandler(self):
         self.resetHandler()
         random.seed()
-        self.pointList = [ ( random.randint(5, self.wWidth - 5), random.randint(5, self.wHeight - 50) ) for k in range(56) ]
+        self.pointList = [ ( random.randint(5, self.wWidth - 5), random.randint(5, self.wHeight - 50) ) for k in range(100000) ]
 
     def resetHandler(self):
         self.pointList = []
