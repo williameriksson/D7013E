@@ -25,6 +25,9 @@ class Example(QtGui.QWidget):
         self.miniDiscButton = QtGui.QPushButton('MiniDisc', self)
         self.miniDiscButton.clicked.connect(self.miniDiscHandler)
 
+        self.rectangleButton = QtGui.QPushButton('Rectangle', self)
+        self.rectangleButton.clicked.connect(self.rectangleHandler)
+
         self.randomButton = QtGui.QPushButton('Random', self)
         self.randomButton.clicked.connect(self.randomHandler)
 
@@ -37,6 +40,7 @@ class Example(QtGui.QWidget):
         layout = QtGui.QHBoxLayout()
         layout.addWidget(self.bruteButton)
         layout.addWidget(self.miniDiscButton)
+        layout.addWidget(self.rectangleButton)
         layout.addWidget(self.randomButton)
         layout.addWidget(self.readButton)
         layout.addWidget(self.resetButton)
@@ -79,6 +83,82 @@ class Example(QtGui.QWidget):
         del lower[-1]
 
         self.lineList = upper + lower
+
+    def angleThreePoints(self, p1, p2, p3):
+        # Angle between the lines from middle point to the others
+        a = (p2[0]-p1[0])**2 + (p2[1]-p1[1])**2
+        b = (p2[0]-p3[0])**2 + (p2[1]-p3[1])**2
+        c = (p3[0]-p1[0])**2 + (p3[1]-p1[1])**2
+        res = math.acos( (a + b - c) / math.sqrt(4 * a * b) )
+
+        return res * (180.0 / math.pi)
+
+
+    def rectangleHandler(self):
+        self.convexHandler()
+
+        x_min = float('inf')
+        x_max = -float('inf')
+        y_min = float('inf')
+        y_max = -float('inf')
+
+        # Indices of current evaluation points
+        i_p1 = None
+        i_p2 = None
+        i_p3 = None
+        i_p4 = None
+
+        for i in xrange(0, len(self.lineList)):
+            p = self.lineList[i]
+            x_min = p[0] if p[0] < x_min else x_min
+            x_max = p[0] if p[0] > x_max else x_max
+            y_min = p[1] if p[1] < y_min else y_min
+            y_max = p[1] if p[1] > y_max else y_max
+
+            i_p1 = i if p[0] == x_min else p1
+            i_p2 = i if p[1] == y_max else p2
+            i_p3 = i if p[0] == x_max else p3
+            i_p4 = i if p[1] == y_min else p4
+
+        p1_rect = (x_min, y_max)
+        p2_rect = (x_max, y_max)
+        p3_rect = (x_max, y_min)
+        p4_rect = (x_min, y_min)
+
+        #rectList = [(x_min, y_max), (x_max, y_max), (x_max, y_min), (x_min, y_min)]
+        total_angle = 0
+        while total_angle < 90:
+            i_succ_p1 = i_p1 + 1 if i_p1 + 1 <= len(self.lineList) - 1 else 0
+            i_succ_p2 = i_p2 + 1 if i_p2 + 1 <= len(self.lineList) - 1 else 0
+            i_succ_p3 = i_p3 + 1 if i_p3 + 1 <= len(self.lineList) - 1 else 0
+            i_succ_p4 = i_p4 + 1 if i_p4 + 1 <= len(self.lineList) - 1 else 0
+
+            angle1 = self.angleThreePoints(p1_rect, self.lineList[i_p1], self.lineList[i_succ_p1])
+            angle2 = self.angleThreePoints(p2_rect, self.lineList[i_p2], self.lineList[i_succ_p2])
+            angle3 = self.angleThreePoints(p3_rect, self.lineList[i_p3], self.lineList[i_succ_p3])
+            angle4 = self.angleThreePoints(p4_rect, self.lineList[i_p4], self.lineList[i_succ_p4])
+
+            angle1 = angle1 if angle1 > 0 else float('inf')
+            angle2 = angle1 if angle2 > 0 else float('inf')
+            angle3 = angle1 if angle3 > 0 else float('inf')
+            angle4 = angle1 if angle4 > 0 else float('inf')
+
+            smallest_angle = min(angle1, angle2, angle3, angle4)
+            total_angle += smallest_angle
+
+            if angle1 == smallest_angle:
+                i_p1 = i_p1 + 1 if i_p1 + 1 <= len(self.lineList) - 1 else 0
+            elif angle2 == smallest_angle:
+                i_p2 = i_p2 + 1 if i_p2 + 1 <= len(self.lineList) - 1 else 0
+            elif angle3 == smallest_angle:
+                i_p3 = i_p3 + 1 if i_p3 + 1 <= len(self.lineList) - 1 else 0
+            elif angle4 == smallest_angle:
+                i_p4 = i_p4 + 1 if i_p4 + 1 <= len(self.lineList) - 1 else 0
+
+
+
+
+
 
 
     def isOutsideThreeP(self, a, b, c):
@@ -303,7 +383,7 @@ class Example(QtGui.QWidget):
         qp.begin(self)
         self.drawPoints(qp)
         self.drawCircle(qp)
-        # self.drawLines(qp)
+        self.drawLines(qp)
         qp.end()
 
     def drawPoints(self, qp):
