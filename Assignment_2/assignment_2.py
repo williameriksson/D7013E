@@ -14,6 +14,16 @@ class Example(QtGui.QWidget):
     wHeight = 800
     wWidth = 1000
 
+
+    ratio_x = 1
+    ratio_y = 1
+    smallest_x = float('inf')
+    smallest_y = float('inf')
+    offset_x = 10 # 10
+    offset_y = 50 # 50
+    biggest_x = -float('inf')
+    biggest_y = -float('inf')
+
     def __init__(self):
         super(Example, self).__init__()
         self.readInputFile()
@@ -51,6 +61,40 @@ class Example(QtGui.QWidget):
         self.setLayout(vbox)
 
         self.initUI()
+
+    def resetValues(self):
+        self.smallest_y = float('inf')
+        self.smallest_x = float('inf')
+        self.biggest_x = -float('inf')
+        self.biggest_y = -float('inf')
+
+    def setMaxMin(self):
+        for (x, y) in self.pointList:
+            if x < self.smallest_x:
+                self.smallest_x = x
+
+            if x > self.biggest_x:
+                self.biggest_x = x
+
+            if y < self.smallest_y:
+                self.smallest_y = y
+
+            if y > self.biggest_y:
+                self.biggest_y = y
+
+        self.calcRatios()
+
+
+    def calcRatios(self):
+        if (self.biggest_x - self.smallest_x) == 0:
+            self.ratio_x = 1
+        else:
+            self.ratio_x = float(self.wWidth - self.offset_x) / (float(self.biggest_x) - float(self.smallest_x))
+
+        if (self.biggest_y - self.smallest_y) == 0:
+            self.ratio_y = 1
+        else:
+            self.ratio_y = float(self.wHeight - self.offset_y) / (float(self.biggest_y) - float(self.smallest_y))
 
     def leftTurn(self, f, s, t):
         res = (s[0] - f[0]) * (t[1] - f[1]) - (s[1] - f[1]) * (t[0] - f[0])
@@ -103,34 +147,23 @@ class Example(QtGui.QWidget):
             return res
         return 2*math.pi
 
-
-    # def newRectCoords(self, p1, p2, p3, p4, A, c, w, h):
-    #     x = c[0]
-    #     y = c[1]
-    #
-    #     UL  =  (x + ( w / 2 ) * math.cos(A) - ( h / 2 ) * math.sin(A) ,  y + ( h / 2 ) * math.cos(A)  + ( w / 2 ) * math.sin(A))
-    #     UR  =  (x - ( w / 2 ) * math.cos(A) - ( h / 2 ) * math.sin(A) ,  y + ( h / 2 ) * math.cos(A)  - ( w / 2 ) * math.sin(A))
-    #     BL  =  (x + ( w / 2 ) * math.cos(A) + ( h / 2 ) * math.sin(A) ,  y - ( h / 2 ) * math.cos(A)  + ( w / 2 ) * math.sin(A))
-    #     BR  =  (x - ( w / 2 ) * math.cos(A) + ( h / 2 ) * math.sin(A) ,  y - ( h / 2 ) * math.cos(A)  - ( w / 2 ) * math.sin(A))
-    #     return (UL, UR, BR, BL)
-
     def rotatePoint(self, p, c_p, a):
-      s = math.sin(-a); # should it be minus?
-      c = math.cos(-a);
-      p = list(p)
+        s = math.sin(-a); # should it be minus?
+        c = math.cos(-a);
+        p = list(p)
 
-      # translate point back to origin:
-      p[0] -= c_p[0];
-      p[1] -= c_p[1];
+        # translate point back to origin:
+        p[0] -= c_p[0];
+        p[1] -= c_p[1];
 
-      # rotate point
-      xnew = p[0] * c - p[1] * s;
-      ynew = p[0] * s + p[1] * c;
+        # rotate point
+        xnew = p[0] * c - p[1] * s;
+        ynew = p[0] * s + p[1] * c;
 
-      # translate point back:
-      p[0] = xnew + c_p[0];
-      p[1] = ynew + c_p[1];
-      return p;
+        # translate point back:
+        p[0] = xnew + c_p[0];
+        p[1] = ynew + c_p[1];
+        return p;
 
     def rectArea(self, a, b, c):
         s1 = math.sqrt( (a[0] - b[0])**2 + (a[1] - b[1])**2 )
@@ -464,6 +497,8 @@ class Example(QtGui.QWidget):
         self.show()
 
     def paintEvent(self, e):
+        self.resetValues()
+        self.setMaxMin()
         qp = QtGui.QPainter()
         qp.begin(self)
         self.drawPoints(qp)
@@ -476,34 +511,81 @@ class Example(QtGui.QWidget):
         qp.setBrush(QtCore.Qt.red)
         size = self.size()
         radius = 3
+
         for pointTuple in self.pointList:
             x = pointTuple[0]
             y = pointTuple[1]
-            center = QtCore.QPoint(x, y)
+            center = QtCore.QPoint((x - self.smallest_x) * self.ratio_x + self.offset_x, (y - self.smallest_y) * self.ratio_y + self.offset_y)
             qp.drawEllipse(center, radius, radius)
 
     def drawLines(self, qp):
         pen = QtGui.QPen(QtCore.Qt.black, 2, QtCore.Qt.SolidLine)
         qp.setPen(pen)
+        s_x = self.smallest_x
+        s_y = self.smallest_y
         for tup in self.lineList:
             if (self.lineList.index(tup) + 1 != len(self.lineList)):
                 nextTup = self.lineList[self.lineList.index(tup) + 1]
-                qp.drawLine(tup[0], tup[1], nextTup[0], nextTup[1])
+                x_1 = (tup[0] - s_x) * self.ratio_x + self.offset_x
+                y_1 = (tup[1] - s_y) * self.ratio_y + self.offset_y
+                x_2 = (nextTup[0] - s_x) * self.ratio_x + self.offset_x
+                y_2 = (nextTup[1] - s_y) * self.ratio_y + self.offset_y
+                qp.drawLine(x_1, y_1, x_2, y_2)
         if len(self.lineList) > 1:
-            qp.drawLine(self.lineList[0][0], self.lineList[0][1], self.lineList[-1][0], self.lineList[-1][1])
+            x_1 = (self.lineList[0][0] - s_x) * self.ratio_x + self.offset_x
+            y_1 = (self.lineList[0][1] - s_y) * self.ratio_y + self.offset_y
+            x_2 = (self.lineList[-1][0] - s_x) * self.ratio_x + self.offset_x
+            y_2 = (self.lineList[-1][1] - s_y) * self.ratio_y + self.offset_y
+            qp.drawLine(x_1, y_1, x_2, y_2)
         QtGui.QWidget.update(self)
 
     def drawCircle(self, qp):
         if self.c_mid and self.c_radius:
             qp.setPen(QtCore.Qt.red)
             qp.setBrush(QtCore.Qt.NoBrush)
-            size = self.size()
-            x = self.c_mid[0]
-            y = self.c_mid[1]
+
+            s_x = self.smallest_x
+            s_y = self.smallest_y
+            x = (self.c_mid[0] - s_x) * self.ratio_x + self.offset_x
+            y = (self.c_mid[1] - s_y) * self.ratio_y + self.offset_y
 
             center = QtCore.QPoint(x, y)
-            qp.drawEllipse(center, self.c_radius, self.c_radius)
+            qp.drawEllipse(center, self.c_radius * self.ratio_x, self.c_radius * self.ratio_y)
             QtGui.QWidget.update(self)
+
+    # def drawPoints(self, qp):
+    #     qp.setPen(QtCore.Qt.red)
+    #     qp.setBrush(QtCore.Qt.red)
+    #     size = self.size()
+    #     radius = 3
+    #     for pointTuple in self.pointList:
+    #         x = pointTuple[0]
+    #         y = pointTuple[1]
+    #         center = QtCore.QPoint(x, y)
+    #         qp.drawEllipse(center, radius, radius)
+    #
+    # def drawLines(self, qp):
+    #     pen = QtGui.QPen(QtCore.Qt.black, 2, QtCore.Qt.SolidLine)
+    #     qp.setPen(pen)
+    #     for tup in self.lineList:
+    #         if (self.lineList.index(tup) + 1 != len(self.lineList)):
+    #             nextTup = self.lineList[self.lineList.index(tup) + 1]
+    #             qp.drawLine(tup[0], tup[1], nextTup[0], nextTup[1])
+    #     if len(self.lineList) > 1:
+    #         qp.drawLine(self.lineList[0][0], self.lineList[0][1], self.lineList[-1][0], self.lineList[-1][1])
+    #     QtGui.QWidget.update(self)
+
+    # def drawCircle(self, qp):
+    #     if self.c_mid and self.c_radius:
+    #         qp.setPen(QtCore.Qt.red)
+    #         qp.setBrush(QtCore.Qt.NoBrush)
+    #         size = self.size()
+    #         x = self.c_mid[0]
+    #         y = self.c_mid[1]
+    #
+    #         center = QtCore.QPoint(x, y)
+    #         qp.drawEllipse(center, self.c_radius, self.c_radius)
+    #         QtGui.QWidget.update(self)
 
     def mousePressEvent(self, event):
         self.pointList.append((event.pos().x(), event.pos().y()))
