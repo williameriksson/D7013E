@@ -93,20 +93,26 @@ class Example(QtGui.QWidget):
         num =  (a + b - c)
         den = math.sqrt(4 * a * b)
         if den != 0:
-            res = math.acos( num / den )
+            fraction = num / den
+            if fraction < -1:
+                fraction = -1
+            if fraction > 1:
+                fraction = 1
+
+            res = math.acos( fraction )
             return res
         return 2*math.pi
 
 
-    def newRectCoords(self, p1, p2, p3, p4, A, c, w, h):
-        x = c[0]
-        y = c[1]
-
-        UL  =  (x + ( w / 2 ) * math.cos(A) - ( h / 2 ) * math.sin(A) ,  y + ( h / 2 ) * math.cos(A)  + ( w / 2 ) * math.sin(A))
-        UR  =  (x - ( w / 2 ) * math.cos(A) - ( h / 2 ) * math.sin(A) ,  y + ( h / 2 ) * math.cos(A)  - ( w / 2 ) * math.sin(A))
-        BL  =  (x + ( w / 2 ) * math.cos(A) + ( h / 2 ) * math.sin(A) ,  y - ( h / 2 ) * math.cos(A)  + ( w / 2 ) * math.sin(A))
-        BR  =  (x - ( w / 2 ) * math.cos(A) + ( h / 2 ) * math.sin(A) ,  y - ( h / 2 ) * math.cos(A)  - ( w / 2 ) * math.sin(A))
-        return (UL, UR, BR, BL)
+    # def newRectCoords(self, p1, p2, p3, p4, A, c, w, h):
+    #     x = c[0]
+    #     y = c[1]
+    #
+    #     UL  =  (x + ( w / 2 ) * math.cos(A) - ( h / 2 ) * math.sin(A) ,  y + ( h / 2 ) * math.cos(A)  + ( w / 2 ) * math.sin(A))
+    #     UR  =  (x - ( w / 2 ) * math.cos(A) - ( h / 2 ) * math.sin(A) ,  y + ( h / 2 ) * math.cos(A)  - ( w / 2 ) * math.sin(A))
+    #     BL  =  (x + ( w / 2 ) * math.cos(A) + ( h / 2 ) * math.sin(A) ,  y - ( h / 2 ) * math.cos(A)  + ( w / 2 ) * math.sin(A))
+    #     BR  =  (x - ( w / 2 ) * math.cos(A) + ( h / 2 ) * math.sin(A) ,  y - ( h / 2 ) * math.cos(A)  - ( w / 2 ) * math.sin(A))
+    #     return (UL, UR, BR, BL)
 
     def rotatePoint(self, p, c_p, a):
       s = math.sin(-a); # should it be minus?
@@ -145,6 +151,7 @@ class Example(QtGui.QWidget):
         i_p3 = None
         i_p4 = None
 
+        # Get the max and min values, and find the starting supporting points.
         for i in xrange(0, len(self.lineList)):
             p = self.lineList[i]
             x_min = p[0] if p[0] < x_min else x_min
@@ -152,30 +159,26 @@ class Example(QtGui.QWidget):
             y_min = p[1] if p[1] < y_min else y_min
             y_max = p[1] if p[1] > y_max else y_max
 
-
-
             i_p1 = i if p[0] == x_min else i_p1
             i_p2 = i if p[1] == y_max else i_p2
             i_p3 = i if p[0] == x_max else i_p3
             i_p4 = i if p[1] == y_min else i_p4
 
-
-
+        # Define the first rectangle.
         p1_rect = (x_min, y_max)
         p2_rect = (x_max, y_max)
         p3_rect = (x_max, y_min)
         p4_rect = (x_min, y_min)
 
+        # Find the middle point of the rectangle
         cent_r = (x_min + (x_max - x_min) / 2, y_min + (y_max - y_min) / 2)
-        w_r = x_max - x_min
-        h_r = y_max - y_min
 
-        #rectList = [(x_min, y_max), (x_max, y_max), (x_max, y_min), (x_min, y_min)]
         total_angle = 0
         smallest_rect = [p1_rect, p2_rect, p3_rect, p4_rect]
         smallest_area = self.rectArea(p1_rect, p2_rect, p3_rect)
 
         while total_angle < math.pi / 2:
+            # Find next index for each supporting point
             i_succ_p1 = i_p1 + 1 if i_p1 + 1 < len(self.lineList) else 0
             i_succ_p2 = i_p2 + 1 if i_p2 + 1 < len(self.lineList) else 0
             i_succ_p3 = i_p3 + 1 if i_p3 + 1 < len(self.lineList) else 0
@@ -186,83 +189,60 @@ class Example(QtGui.QWidget):
             angle3 = self.angleThreePoints(p3_rect, self.lineList[i_p3], self.lineList[i_succ_p3])
             angle4 = self.angleThreePoints(p4_rect, self.lineList[i_p4], self.lineList[i_succ_p4])
 
-            print angle1
-            print '\n'
-            print angle2
-            print '\n'
-            print angle3
-            print '\n'
-            print angle4
-            print '\n'
-            # angle1 = angle1 if angle1 > 0 else float('inf')
-            # angle2 = angle1 if angle2 > 0 else float('inf')
-            # angle3 = angle1 if angle3 > 0 else float('inf')
-            # angle4 = angle1 if angle4 > 0 else float('inf')
-
             smallest_angle = min(angle1, angle2, angle3, angle4)
-            total_angle += smallest_angle # Remove 90 later
+            total_angle += smallest_angle
 
             p1 = self.lineList[i_p1]
             p2 = self.lineList[i_p2]
             p3 = self.lineList[i_p3]
             p4 = self.lineList[i_p4]
 
+            # Rotate the supporting points to baseline
             temp_p1 = self.rotatePoint(p1, cent_r, -total_angle)
             temp_p2 = self.rotatePoint(p2, cent_r, -total_angle)
             temp_p3 = self.rotatePoint(p3, cent_r, -total_angle)
             temp_p4 = self.rotatePoint(p4, cent_r, -total_angle)
 
             temp_lst = [temp_p1, temp_p2, temp_p3, temp_p4]
+
             x_min = float('inf')
             x_max = -float('inf')
             y_min = float('inf')
             y_max = -float('inf')
+
+            # Find the new extreme points, considering only the supporting points
             for p in temp_lst:
                 x_min = p[0] if p[0] < x_min else x_min
                 x_max = p[0] if p[0] > x_max else x_max
                 y_min = p[1] if p[1] < y_min else y_min
                 y_max = p[1] if p[1] > y_max else y_max
 
+            # Define the new rectangle from the new extreme points
             p1_rect = (x_min, y_max)
             p2_rect = (x_max, y_max)
             p3_rect = (x_max, y_min)
             p4_rect = (x_min, y_min)
 
-            # w_r = x_max - x_min
-            # h_r = y_max - y_min
-
+            # Rotate the rectangle to its real position
             p1_rect = self.rotatePoint(p1_rect, cent_r, total_angle)
             p2_rect = self.rotatePoint(p2_rect, cent_r, total_angle)
             p3_rect = self.rotatePoint(p3_rect, cent_r, total_angle)
             p4_rect = self.rotatePoint(p4_rect, cent_r, total_angle)
-            # (p1_rect, p2_rect, p3_rect, p4_rect) = self.newRectCoords(p1_rect, p2_rect, p3_rect, p4_rect, total_angle, cent_r, w_r, h_r)
-            # smallest_rect = [p1_rect, p2_rect, p3_rect, p4_rect]
 
-
+            # Check which supporting point that should move clockwise and change it
             if angle1 == smallest_angle:
-                # (p1_rect, p2_rect, p3_rect, p4_rect) = self.newRectCoords(p1, p2, p3, p4, self.lineList[i_succ_p1])
                 i_p1 = i_p1 + 1 if i_p1 + 1 <= len(self.lineList) - 1 else 0
             elif angle2 == smallest_angle:
-                # (p1_rect, p2_rect, p3_rect, p4_rect) = self.newRectCoords(p2, p3, p4, p1, self.lineList[i_succ_p2])
                 i_p2 = i_p2 + 1 if i_p2 + 1 <= len(self.lineList) - 1 else 0
             elif angle3 == smallest_angle:
-                # (p1_rect, p2_rect, p3_rect, p4_rect) = self.newRectCoords(p3, p4, p1, p2, self.lineList[i_succ_p3])
                 i_p3 = i_p3 + 1 if i_p3 + 1 <= len(self.lineList) - 1 else 0
             elif angle4 == smallest_angle:
-                # (p1_rect, p2_rect, p3_rect, p4_rect) = self.newRectCoords(p4, p1, p2, p3, self.lineList[i_succ_p4])
                 i_p4 = i_p4 + 1 if i_p4 + 1 <= len(self.lineList) - 1 else 0
-
-
-
-
 
             if self.rectArea(p1_rect, p2_rect, p3_rect) < smallest_area:
                 smallest_rect = [p1_rect, p2_rect, p3_rect, p4_rect]
 
         self.lineList = smallest_rect
-
-
-
 
 
 
