@@ -15,12 +15,12 @@ class Example(QtGui.QWidget):
     wWidth = 1000
 
 
-    ratio_x = 1
-    ratio_y = 1
+    ratio = 1
+    ratio = 1
     smallest_x = float('inf')
     smallest_y = float('inf')
-    offset_x = 10 # 10
-    offset_y = 50 # 50
+    offset_x = 150 # 10
+    offset_y = 150 # 50
     biggest_x = -float('inf')
     biggest_y = -float('inf')
 
@@ -70,6 +70,8 @@ class Example(QtGui.QWidget):
 
     def setMaxMin(self):
         for (x, y) in self.pointList:
+            x = x * 1.2
+            y = y * 1.4
             if x < self.smallest_x:
                 self.smallest_x = x
 
@@ -86,15 +88,20 @@ class Example(QtGui.QWidget):
 
 
     def calcRatios(self):
+        x_ratio = -float('inf')
+        y_ratio = -float('inf')
+
         if (self.biggest_x - self.smallest_x) == 0:
-            self.ratio_x = 1
+            x_ratio = 1
         else:
-            self.ratio_x = float(self.wWidth - self.offset_x) / (float(self.biggest_x) - float(self.smallest_x))
+            x_ratio = float(self.wWidth - self.offset_x) / (float(self.biggest_x) - float(self.smallest_x))
 
         if (self.biggest_y - self.smallest_y) == 0:
-            self.ratio_y = 1
+            y_ratio = 1
         else:
-            self.ratio_y = float(self.wHeight - self.offset_y) / (float(self.biggest_y) - float(self.smallest_y))
+            y_ratio = float(self.wHeight - self.offset_y) / (float(self.biggest_y) - float(self.smallest_y))
+
+        self.ratio = x_ratio if x_ratio < y_ratio else y_ratio
 
     def leftTurn(self, f, s, t):
         res = (s[0] - f[0]) * (t[1] - f[1]) - (s[1] - f[1]) * (t[0] - f[0])
@@ -148,21 +155,18 @@ class Example(QtGui.QWidget):
         return 2*math.pi
 
     def rotatePoint(self, p, c_p, a):
-        s = math.sin(-a); # should it be minus?
-        c = math.cos(-a);
+        sin_a = math.sin(-a);
+        cos_a = math.cos(-a);
         p = list(p)
 
-        # translate point back to origin:
         p[0] -= c_p[0];
         p[1] -= c_p[1];
 
-        # rotate point
-        xnew = p[0] * c - p[1] * s;
-        ynew = p[0] * s + p[1] * c;
+        new_x = p[0] * cos_a - p[1] * sin_a;
+        new_y = p[0] * sin_a + p[1] * cos_a;
 
-        # translate point back:
-        p[0] = xnew + c_p[0];
-        p[1] = ynew + c_p[1];
+        p[0] = new_x + c_p[0];
+        p[1] = new_y + c_p[1];
         return p;
 
     def rectArea(self, a, b, c):
@@ -230,7 +234,7 @@ class Example(QtGui.QWidget):
             p3 = self.lineList[i_p3]
             p4 = self.lineList[i_p4]
 
-            # Rotate the supporting points to baseline
+            # Simulate rotation of the supporting points to baseline counter-clockwise
             temp_p1 = self.rotatePoint(p1, cent_r, -total_angle)
             temp_p2 = self.rotatePoint(p2, cent_r, -total_angle)
             temp_p3 = self.rotatePoint(p3, cent_r, -total_angle)
@@ -243,20 +247,20 @@ class Example(QtGui.QWidget):
             y_min = float('inf')
             y_max = -float('inf')
 
-            # Find the new extreme points, considering only the supporting points
+            # Find the new extreme points, considering only the pseudo supporting points
             for p in temp_lst:
                 x_min = p[0] if p[0] < x_min else x_min
                 x_max = p[0] if p[0] > x_max else x_max
                 y_min = p[1] if p[1] < y_min else y_min
                 y_max = p[1] if p[1] > y_max else y_max
 
-            # Define the new rectangle from the new extreme points
+            # Define the new rectangle from the new extreme points of the pseudo supporting points
             p1_rect = (x_min, y_max)
             p2_rect = (x_max, y_max)
             p3_rect = (x_max, y_min)
             p4_rect = (x_min, y_min)
 
-            # Rotate the rectangle to its real position
+            # Rotate the rectangle to its real position clockwise
             p1_rect = self.rotatePoint(p1_rect, cent_r, total_angle)
             p2_rect = self.rotatePoint(p2_rect, cent_r, total_angle)
             p3_rect = self.rotatePoint(p3_rect, cent_r, total_angle)
@@ -295,25 +299,6 @@ class Example(QtGui.QWidget):
         if dist > r:
             return True
         return False
-
-
-    # def isOutside(self, a, b, c, d):
-    #     adx = a[0] - d[0];
-    #     ady = a[1] - d[1];
-    #     bdx = b[0] - d[0];
-    #     bdy = b[1] - d[1];
-    #     cdx = c[0] - d[0];
-    #     cdy = c[1] - d[1];
-    #     abdet = adx*bdy - bdx*ady;
-    #     bcdet = bdx*cdy - cdx*bdy;
-    #     cadet = cdx*ady - adx*cdy;
-    #     alift = adx*adx + ady*ady;
-    #     blift = bdx*bdx + bdy*bdy;
-    #     clift = cdx*cdx + cdy*cdy;
-    #     sign = alift*bcdet + blift*cadet + clift*abdet;
-    #     if sign < 0:
-    #         return True
-    #     return False
 
     def smallesCircleThreePoints(self, a, b, c):
         x1 = a[0]
@@ -437,8 +422,6 @@ class Example(QtGui.QWidget):
         print "It took: " + str(stop_time - start_time) + 'seconds with ' + str(len(self.pointList)) + 'points'
         QtGui.QWidget.update(self)
 
-
-
     def miniDiscWithPoint(self, lst, q):
         # Need random shuffle lst here? must make copy of list in caller in that case?
         p1 = lst[0]
@@ -463,13 +446,10 @@ class Example(QtGui.QWidget):
 
         return (c_x, c_y, r)
 
-
-
-
     def randomHandler(self):
         self.resetHandler()
         random.seed()
-        self.pointList = [ ( random.randint(5, self.wWidth - 5), random.randint(5, self.wHeight - 50) ) for k in range(100) ]
+        self.pointList = [ ( random.randint(5, self.wWidth - 5), random.randint(5, self.wHeight - 50) ) for k in range(100000) ]
 
     def resetHandler(self):
         self.pointList = []
@@ -515,7 +495,7 @@ class Example(QtGui.QWidget):
         for pointTuple in self.pointList:
             x = pointTuple[0]
             y = pointTuple[1]
-            center = QtCore.QPoint((x - self.smallest_x) * self.ratio_x + self.offset_x, (y - self.smallest_y) * self.ratio_y + self.offset_y)
+            center = QtCore.QPoint(x * self.ratio + self.offset_x, y * self.ratio + self.offset_y)
             qp.drawEllipse(center, radius, radius)
 
     def drawLines(self, qp):
@@ -526,16 +506,16 @@ class Example(QtGui.QWidget):
         for tup in self.lineList:
             if (self.lineList.index(tup) + 1 != len(self.lineList)):
                 nextTup = self.lineList[self.lineList.index(tup) + 1]
-                x_1 = (tup[0] - s_x) * self.ratio_x + self.offset_x
-                y_1 = (tup[1] - s_y) * self.ratio_y + self.offset_y
-                x_2 = (nextTup[0] - s_x) * self.ratio_x + self.offset_x
-                y_2 = (nextTup[1] - s_y) * self.ratio_y + self.offset_y
+                x_1 = (tup[0]) * self.ratio + self.offset_x
+                y_1 = (tup[1]) * self.ratio + self.offset_y
+                x_2 = (nextTup[0]) * self.ratio + self.offset_x
+                y_2 = (nextTup[1]) * self.ratio + self.offset_y
                 qp.drawLine(x_1, y_1, x_2, y_2)
         if len(self.lineList) > 1:
-            x_1 = (self.lineList[0][0] - s_x) * self.ratio_x + self.offset_x
-            y_1 = (self.lineList[0][1] - s_y) * self.ratio_y + self.offset_y
-            x_2 = (self.lineList[-1][0] - s_x) * self.ratio_x + self.offset_x
-            y_2 = (self.lineList[-1][1] - s_y) * self.ratio_y + self.offset_y
+            x_1 = (self.lineList[0][0]) * self.ratio + self.offset_x
+            y_1 = (self.lineList[0][1]) * self.ratio + self.offset_y
+            x_2 = (self.lineList[-1][0]) * self.ratio + self.offset_x
+            y_2 = (self.lineList[-1][1]) * self.ratio + self.offset_y
             qp.drawLine(x_1, y_1, x_2, y_2)
         QtGui.QWidget.update(self)
 
@@ -546,50 +526,16 @@ class Example(QtGui.QWidget):
 
             s_x = self.smallest_x
             s_y = self.smallest_y
-            x = (self.c_mid[0] - s_x) * self.ratio_x + self.offset_x
-            y = (self.c_mid[1] - s_y) * self.ratio_y + self.offset_y
+            x = (self.c_mid[0]) * self.ratio + self.offset_x
+            y = (self.c_mid[1]) * self.ratio + self.offset_y
 
             center = QtCore.QPoint(x, y)
-            qp.drawEllipse(center, self.c_radius * self.ratio_x, self.c_radius * self.ratio_y)
+            qp.drawEllipse(center, self.c_radius * self.ratio, self.c_radius * self.ratio)
             QtGui.QWidget.update(self)
 
-    # def drawPoints(self, qp):
-    #     qp.setPen(QtCore.Qt.red)
-    #     qp.setBrush(QtCore.Qt.red)
-    #     size = self.size()
-    #     radius = 3
-    #     for pointTuple in self.pointList:
-    #         x = pointTuple[0]
-    #         y = pointTuple[1]
-    #         center = QtCore.QPoint(x, y)
-    #         qp.drawEllipse(center, radius, radius)
-    #
-    # def drawLines(self, qp):
-    #     pen = QtGui.QPen(QtCore.Qt.black, 2, QtCore.Qt.SolidLine)
-    #     qp.setPen(pen)
-    #     for tup in self.lineList:
-    #         if (self.lineList.index(tup) + 1 != len(self.lineList)):
-    #             nextTup = self.lineList[self.lineList.index(tup) + 1]
-    #             qp.drawLine(tup[0], tup[1], nextTup[0], nextTup[1])
-    #     if len(self.lineList) > 1:
-    #         qp.drawLine(self.lineList[0][0], self.lineList[0][1], self.lineList[-1][0], self.lineList[-1][1])
+    # def mousePressEvent(self, event):
+    #     self.pointList.append((event.pos().x(), event.pos().y()))
     #     QtGui.QWidget.update(self)
-
-    # def drawCircle(self, qp):
-    #     if self.c_mid and self.c_radius:
-    #         qp.setPen(QtCore.Qt.red)
-    #         qp.setBrush(QtCore.Qt.NoBrush)
-    #         size = self.size()
-    #         x = self.c_mid[0]
-    #         y = self.c_mid[1]
-    #
-    #         center = QtCore.QPoint(x, y)
-    #         qp.drawEllipse(center, self.c_radius, self.c_radius)
-    #         QtGui.QWidget.update(self)
-
-    def mousePressEvent(self, event):
-        self.pointList.append((event.pos().x(), event.pos().y()))
-        QtGui.QWidget.update(self)
 
     # def mouseReleaseEvent(self, QMouseEvent):
     #     cursor =QtGui.QCursor()
