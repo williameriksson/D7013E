@@ -102,7 +102,8 @@ def oneDNumberInRange(n, v1, v2):
     splitNode = findSplitNode(n, v1, v2)
     nr = 0
     if isinstance(splitNode, leaf):
-        nr = 1
+        if splitNode.value >= v1 and splitNode.value <= v2:
+            nr = 1
 
     else:
         v = splitNode.l_node
@@ -115,7 +116,7 @@ def oneDNumberInRange(n, v1, v2):
                 v = v.r_node
 
         if isinstance(v, leaf):
-            if v.value >= v1:
+            if v.value < v1:
                 nr -= 1
 
         v = findSplitNode(n, v1, v2).r_node
@@ -127,7 +128,7 @@ def oneDNumberInRange(n, v1, v2):
                 v = v.l_node
 
         if isinstance(v, leaf):
-            if v.value <= v2:
+            if v.value > v2:
                 nr -= 1
 
     return nr
@@ -136,7 +137,10 @@ def oneDMaxWeightInRange(n, v1, v2):
     splitNode = findSplitNode(n, v1, v2)
 
     if isinstance(splitNode, leaf):
-        return splitNode.weight
+        if splitNode.value >= v1 and splitNode.value <= v2:
+            return splitNode.weight
+        else:
+            return None
 
     def leftHelper(n, v1, v2, maxWeight):
         if isinstance(n, leaf):
@@ -162,8 +166,8 @@ def oneDMaxWeightInRange(n, v1, v2):
 
     maxLeft = leftHelper(splitNode.l_node, v1, v2, -float('inf'))
     maxRight = rightHelper(splitNode.r_node, v1, v2, -float('inf'))
-    print 'maxLeft', maxLeft
-    print 'maxRight', maxRight
+    # print 'maxLeft', maxLeft
+    # print 'maxRight', maxRight
 
     return max(maxLeft, maxRight)
 
@@ -174,45 +178,86 @@ def getTree(n, lst = []):
         return getTree(n.l_node, lst) + getTree(n.r_node, lst)
 
 
-def bruteForceOneDRangeQuery(lst, v1, v2):
-    points = []
+def bruteForce(lst, v1, v2):
+    pointsInRange = []
+    nrOfPointsInRange = 0
+    maxWeightInRange = -float('inf')
     lst.sort()
 
-    for x in lst:
+    for (x, w) in lst:
         if x >= v1 and x <= v2:
-            points.append(x)
+            pointsInRange.append((x, w))
+            nrOfPointsInRange += 1
+            maxWeightInRange = max(maxWeightInRange, w)
 
-    return points
+    if maxWeightInRange == -float('inf'):
+        maxWeightInRange = None
 
-def testSuite():
+    return (pointsInRange, nrOfPointsInRange, maxWeightInRange)
+
+def testSuite(pointList = None, v1 = None, v2 = None):
     i = 1
+    pointListExists = False if pointList == None else True
+    v1Exists = False if v1 == None else True
+    v2Exists = False if v2 == None else True
+
     while i <= 100:
         lowerRange = 0
         upperRange = 100 * i
-        pointList = [random.randint(lowerRange, upperRange) for k in range(10 * i) ]
-        v1 = random.randint(lowerRange, upperRange / 2)
-        v2 = random.randint(upperRange / 2, upperRange)
-        brutePoints = bruteForceOneDRangeQuery(pointList, v1, v2)
-        binaryTreePoints = oneDRangeQuery(makeTree(pointList), v1, v2)
 
-        if brutePoints != binaryTreePoints:
+        if not pointListExists:
+            # pointList = [(random.randint(lowerRange, upperRange), random.uniform(lowerRange, upperRange)) for k in range(10 * i) ]
+            pointList = random.sample(xrange(lowerRange, upperRange), 10 * i)
+            for ind in xrange(0, len(pointList)):
+                pointList[ind] = (pointList[ind], random.uniform(lowerRange, upperRange))
+        else:
+            i = float('inf')
+
+        if not v1Exists:
+            v1 = random.randint(lowerRange, upperRange / 2)
+
+        if not v2Exists:
+            v2 = random.randint(upperRange / 2, upperRange)
+
+        # print pointList
+        (brutePointsInRange, bruteNrOfPointsInRange, bruteMaxWeightInRange) = bruteForce(pointList, v1, v2)
+        root = makeTree(pointList)
+        binaryTreePointsInRange = oneDRangeQuery(root, v1, v2)
+        binaryTreeNrOfPointsInRange = oneDNumberInRange(root, v1, v2)
+        binaryTreeMaxWeightInRange = oneDMaxWeightInRange(root, v1, v2)
+
+        if binaryTreePointsInRange != brutePointsInRange:
             print "FAILURE oneDRangeQuery"
-            print brutePoints
-            print binaryTreePoints
+            print binaryTreePointsInRange
+            print brutePointsInRange
             return
+
+        if binaryTreeNrOfPointsInRange != bruteNrOfPointsInRange:
+            print "FAILURE oneDNumberInRange"
+            print binaryTreeNrOfPointsInRange
+            print bruteNrOfPointsInRange
+            return
+
+        if binaryTreeMaxWeightInRange != bruteMaxWeightInRange:
+            print "FAILURE oneDMaxWeightInRange"
+            print binaryTreeMaxWeightInRange
+            print bruteMaxWeightInRange
+            return
+
         i+=1
 
 
 def main():
-    rootNode = makeTree([(10, 0.1), (11, 0.3), (15, 0.2), (18, 0.9), (19, 1.5), (20, 2.4), (25, 0.5), (30, 1.3)])
+    # rootNode = makeTree([(10, 0.1), (11, 0.3), (15, 0.2), (18, 0.9), (19, 1.5), (20, 2.4), (25, 0.5), (30, 1.3)])
     # lst = getTree(rootNode)
     # print lst
     # print '\n'
     # print findSplitNode(rootNode, 10, 30).nrOfPoints
     # points = oneDRangeQuery(rootNode, 10, 30)
     # print points
-    # testSuite()
+    # testSuite([(10, 0.1), (11, 0.3), (15, 0.2), (18, 0.9), (19, 1.5), (20, 2.4), (25, 0.5), (30, 1.3)], 10, 30)
     # print oneDNumberInRange(rootNode, 11, 25)
-    print oneDMaxWeightInRange(rootNode, 10, 30)
+    # print oneDMaxWeightInRange(rootNode, 10, 30)
+    testSuite()
 if __name__ == '__main__':
     main()
