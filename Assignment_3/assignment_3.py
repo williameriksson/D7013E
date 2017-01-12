@@ -252,12 +252,14 @@ def main():
     # lst = getTree(rootNode)
     # print lst
     # print '\n'
-    # print findSplitNode(rootNode, 10, 30).nrOfPoints
-    # points = oneDRangeQuery(rootNode, 10, 30)
+    # # print findSplitNode(rootNode, 10, 30).nrOfPoints
+    # points = oneDRangeQuery(rootNode, 11, 18)
     # print points
-    # testSuite([(10, 0.1), (11, 0.3), (15, 0.2), (18, 0.9), (19, 1.5), (20, 2.4), (25, 0.5), (30, 1.3)], 10, 30)
-    # print oneDNumberInRange(rootNode, 11, 25)
-    # print oneDMaxWeightInRange(rootNode, 10, 30)
+    # print '\n'
+    # # testSuite([(10, 0.1), (11, 0.3), (15, 0.2), (18, 0.9), (19, 1.5), (20, 2.4), (25, 0.5), (30, 1.3)], 10, 30)
+    # print oneDNumberInRange(rootNode, 11, 18)
+    # print '\n'
+    # print oneDMaxWeightInRange(rootNode, 11, 18)
     testSuite()
 if __name__ == '__main__':
     main()

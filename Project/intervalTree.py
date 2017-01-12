@@ -44,6 +44,7 @@ class Example(QtGui.QWidget):
         # event.pos().y()
         # print queryTreeFromPoint(self.root, x - self.offset, [])
         self.inIntervalList = queryTreeFromPoint(self.root, self.x - self.offset, [])
+
         QtGui.QWidget.update(self)
 
     def drawIntervals(self, qp):
@@ -52,6 +53,7 @@ class Example(QtGui.QWidget):
         red_pen = QtGui.QPen(QtCore.Qt.red, 2, QtCore.Qt.SolidLine)
         n = 0
         # print self.inIntervalList
+
         for (start, end) in self.intervalList:
             if (start, end) in self.inIntervalList:
                 qp.setPen(green_pen)
@@ -72,12 +74,23 @@ def makeTree(lst):
     if len(lst) == 0:
         return None
 
-    xMidIndex = len(lst) / 2 - 1
-    xMid = lst[xMidIndex][0]
+    tmpLst = []
 
+    for (start, end) in lst:
+        tmpLst.append(start)
+        tmpLst.append(end)
+
+    tmpLst.sort()
+    xMidIndex = len(tmpLst) / 2 - 1
+    xMid = tmpLst[xMidIndex]
+    # print xMid
+
+    # xMidIndex = len(lst) / 2 - 1
+    # xMid = lst[xMidIndex][0]
     iMid = []
     iLeft = []
     iRight = []
+
     for (start, end) in lst:
         if start <= xMid and end >= xMid:
             iMid.append((start, end))
@@ -92,6 +105,7 @@ def makeTree(lst):
     iMidRight.sort(key=itemgetter(1))
 
     return node(xMid, iMidLeft, iMidRight, makeTree(iLeft), makeTree(iRight))
+
 
 def queryTreeFromPoint(v, p, lst = []):
     if v == None:
@@ -120,10 +134,21 @@ def randomIntervals(start, end, n):
         intervals.append( (i, random.randint(i + 10, end)) )
     return intervals
 
+def countChildren(node):
+    if node == None:
+        return 0
+
+    return 1 + countChildren(node.lNode) + countChildren(node.rNode)
+
+
 def main():
     # intervals = [(100,300), (50,200), (250,600), (650, 800), (500, 850), (400, 900)]
     intervals = randomIntervals(0, 900, 40)
+    # intervals.sort(key=itemgetter(1))
     root = makeTree(intervals)
+    # print countChildren(root.lNode)
+    # print '\n'
+    # print countChildren(root.rNode)
     # print root.xMid
     # print queryTreeFromPoint(root, 3)
     app = QtGui.QApplication(sys.argv)
